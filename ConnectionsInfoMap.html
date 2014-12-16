@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Connections Heatmap</title>
+<style>
+html, body, #map-canvas {
+	height: 100%;
+margin: 0px;
+padding: 0px
+}
+#panel {
+	position: absolute;
+top: 5px;
+left: 50%;
+margin-left: -180px;
+z-index: 5;
+background-color: #fff;
+padding: 5px;
+border: 1px solid #999;
+}
+</style>
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=visualization"></script>
+<script>
+//fileRead
+function readmultifiles(files) {
+	var reader = new FileReader();  
+
+	function readFile(index2) {
+		if( index2 >= files.length ) 
+		{
+			//File processed, add marker
+			for(var t=0; t<latitude.length;t++)
+			{   var myLatLng = new google.maps.LatLng(parseFloat(latitude[t]), parseFloat(longitude[t]));
+			var titleString = "Name: "+Name[t]+"\nIndustry: "+industry[t];
+			posMarkers[t] = new google.maps.Marker({
+				position: myLatLng,
+				map: map,
+				icon: {
+			        url: picture[t],
+			        scaledSize: new google.maps.Size(20, 20)
+			    },
+				animation: google.maps.Animation.DROP,
+				title:titleString
+			});	
+			}
+
+			alert("Files read successfully!");			
+			return;
+		}
+
+
+		var file = files[index2];
+		reader.onload = function(e) {  
+			// get file content  
+			var bin = e.target.result; 
+//			alert(bin);
+			// do sth with bin
+
+			if(file.name == "GeoCodes.txt")
+			{
+				var split = bin.split('\n');
+				for (var index = 0; index < split.length; index++)
+				{
+					latitude.push(split[index].split(' ')[0]);			
+					longitude.push(split[index].split(' ')[1]);
+					taxiDataNew.push(new google.maps.LatLng(parseFloat(latitude[index]), parseFloat(longitude[index])));
+				}
+
+				
+			}//Geocode.txt end processing
+
+			if(file.name == "Icon.txt")
+			{
+				var split = bin.split('\n');
+				for (var index3 = 0; index3 < split.length; index3++)
+				{
+					picture.push(split[index3]);
+				}
+
+				
+			}//Icon.txt end processing
+
+			if(file.name == "Industry.txt")
+			{
+				var split = bin.split('\n');
+				for (var index4 = 0; index4 < split.length; index4++)
+				{
+					industry.push(split[index4]);
+				}
+
+				
+			}//Industry.txt end processing
+
+			if(file.name == "Name.txt")
+			{
+				var split = bin.split('\n');
+				for (var index5 = 0; index5 < split.length; index5++)
+				{
+					Name.push(split[index5]);
+				}
+				
+			}//Name.txt end processing
+
+
+
+			readFile(index2+1)
+		}
+		reader.readAsBinaryString(file);
+	}
+	readFile(0);
+
+}
+var latitude = new Array();
+var longitude = new Array();
+var Name = new Array();
+var industry = new Array();
+var picture = new Array();
+var posMarkers = {};
+
+var taxiDataNew = new Array();
+window.onload = function() {
+
+	var fileInput = document.getElementById('fileInput');
+	var fileDisplayArea = document.getElementById('fileDisplayArea');
+	fileInput.addEventListener('change', function(e) 
+			{
+
+		var myFiles = fileInput.files;			
+		var textType = /text.*/;
+		readmultifiles(myFiles);
+			});
+}
+
+var map, pointarray, heatmap;
+
+function initialize() {
+	var mapOptions = {
+			zoom: 2,
+			center: new google.maps.LatLng(29.7141454, 19.25),
+			mapTypeId: google.maps.MapTypeId.SATELLITE
+	};
+
+	map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+
+	var pointArray = new google.maps.MVCArray(taxiDataNew);
+
+	heatmap = new google.maps.visualization.HeatmapLayer({
+		data: pointArray
+	});
+
+	heatmap.setMap(map);
+}
+
+function toggleHeatmap() {
+	heatmap.setMap(heatmap.getMap() ? null : map);
+}
+
+function toggleDetails() {
+	
+	for (var m=0;m<posMarkers.length;m++) {
+        if(posMarkers[m].getVisible()) {
+          posMarkers[m].setVisible(false);
+        }
+        else {
+          posMarkers[m].setVisible(true);
+        }
+      }
+}
+
+function changeGradient() {
+	var gradient = [
+	                'rgba(0, 255, 255, 0)',
+	                'rgba(0, 255, 255, 1)',
+	                'rgba(0, 191, 255, 1)',
+	                'rgba(0, 127, 255, 1)',
+	                'rgba(0, 63, 255, 1)',
+	                'rgba(0, 0, 255, 1)',
+	                'rgba(0, 0, 223, 1)',
+	                'rgba(0, 0, 191, 1)',
+	                'rgba(0, 0, 159, 1)',
+	                'rgba(0, 0, 127, 1)',
+	                'rgba(63, 0, 91, 1)',
+	                'rgba(127, 0, 63, 1)',
+	                'rgba(191, 0, 31, 1)',
+	                'rgba(255, 0, 0, 1)'
+	                ]
+	heatmap.set('gradient', heatmap.get('gradient') ? null : gradient);
+}
+
+function changeRadius() {
+	heatmap.set('radius', heatmap.get('radius') ? null : 20);
+}
+
+function changeOpacity() {
+	heatmap.set('opacity', heatmap.get('opacity') ? null : 0.2);
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+</script>
+</head>
+
+<body>
+<div id="panel">
+Select (GeoCode.txt, Icon.txt, Industry.txt, Name.txt): <input type="file" id="fileInput" multiple><pre id="fileDisplayArea"><pre>
+</div>
+<div id="map-canvas"></div>
+
+
+</body>
+</html>
